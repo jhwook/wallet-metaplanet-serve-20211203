@@ -1,4 +1,4 @@
-ar express = require('express');
+var express = require('express');
 var router = express.Router();
 const {findone,findall,createrow , updaterow
 , countrows_scalar
@@ -10,9 +10,9 @@ const {getuseragent , getipaddress}=require('../utils/session')
 const {sendemail, sendemail_customcontents_withtimecheck}=require('../services/mailer')
 const {validateemail}=require('../utils/validates')
 const db=require('../models')
-const dbmon=require('../modelsmongo')
+// const dbmon=require('../modelsmongo')
 const {getusernamefromsession}=require('../utils/session')
-const { createrow:createrow_mon , updaterow : updaterow_mon }=require('../utils/dbmon')
+// const { createrow:createrow_mon , updaterow : updaterow_mon }=require('../utils/dbmon')
 const TOKENLEN=48
 
 /* GET users listing. */
@@ -68,7 +68,7 @@ router.get('/user/myinfo/mongo',async (req , res)=>{
         }
       })
     })
-  })
+  } )
 })
 
 router.post('/email/verifycode/:emailaddress/:code',(req,res)=>{
