@@ -3,25 +3,54 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
-
+let {findone , updatetable }=require('./utils/db')
+const {getipaddress}=require('./utils/session')
+const adminrouter=require('./routes/admin')
+const tickersrouter=require('./routes/tickers')
+const balancesrouter=require('./routes/balances')
+const contentsrouter=require('./routes/contents')
+const cors=require('cors')
 var app = express();
+const wrap = asyncFn => {
+  return (async (req, res, next) => {
+    try {      return await asyncFn(req, res, next) }
+    catch (error) {      return next(error) }
+  })
+}
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
+app.use(cors())
 
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+app.use(wrap(async(req,res,next)=>{let token=req.headers.token
+  if (token){     const resp=await findone('sessionkeys',{token:token,active:1})
+    // LOGGER('bXcKR6bgGp',resp)
+    if(resp){req.username=resp.username // ;req.userlevel=resp.level
+      req.userdata = resp
+      updatetable('sessionkeys',{id:resp.id },{lastactive:gettimestr()}) // token:token,active:1
+    }
+    else {  // req.userlevel=null
+    }
+  }
+  LOGGER('3fX8T5ZBmQ',req.username,getipaddress(req) , req.connection.remotePort)
+  next()
+}))
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
-
+app.use('/admin', adminrouter);
+app.use('/tickers', tickersrouter);
+app.use('/balances', balancesrouter);
+app.use('/contents', contentsrouter);
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
@@ -39,3 +68,10 @@ app.use(function(err, req, res, next) {
 });
 
 module.exports = app;
+let {gettimestr}=require('./utils/common')
+let moment=require('moment')
+let cron = require('node-cron')
+const LOGGER=console.log
+cron.schedule('* * * * *', _=>{
+	LOGGER(gettimestr())
+})

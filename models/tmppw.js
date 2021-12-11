@@ -1,7 +1,7 @@
 /* jshint indent: 2 */
 
 module.exports = function(sequelize, DataTypes) {
-  return sequelize.define('sessionkeys', {
+  return sequelize.define('tmppw', {
     id: {
       autoIncrement: true,
       type: DataTypes.INTEGER(10).UNSIGNED,
@@ -17,33 +17,20 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.DATE,
       allowNull: true
     },
-    username: {
-      type: DataTypes.STRING(40),
+    emailaddress: {
+      type: DataTypes.STRING(100),
       allowNull: true
     },
-    token: {
-      type: DataTypes.STRING(48),
-      allowNull: true
-    },
-    ipaddress: {
-      type: DataTypes.STRING(64),
-      allowNull: true
-    },
-    useragent: {
-      type: DataTypes.STRING(1000),
-      allowNull: true
-    },
-    active: {
-      type: DataTypes.INTEGER(4),
-      allowNull: true,
-      defaultValue: 1
-    },
-    lastactive: {
+    lastupdate: {
       type: DataTypes.STRING(30),
+      allowNull: true
+    },
+    code: {
+      type: DataTypes.STRING(10),
       allowNull: true
     }
   }, {
     sequelize,
-    tableName: 'sessionkeys'
+    tableName: 'tmppw'
   });
 };

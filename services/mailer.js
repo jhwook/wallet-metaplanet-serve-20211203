@@ -92,8 +92,10 @@ const sendemail_withtimecheck=async toemailaddress=>{return new Promise(async(re
 const sendemail = sendemail_withtimecheck
 const sendemail_notimecheck=toemailaddress=>{return new Promise((resolve,reject)=>{
   let token=generaterandomstr_charset(CODELEN,'numbers') // base58
-  const mailoptions={    from: configemail.user    , to:  toemailaddress // '' // toemailaddress
-    , subject: `${STR_SERVICE_NAME} 이메일 인증코드: ${token}`    , text: `인증코드: ${token}` // 내용
+  const mailoptions={    from: configemail.user    
+		, to:  toemailaddress // '' // toemailaddress
+    , subject: `${STR_SERVICE_NAME} 이메일 인증코드: ${token}`    
+		, text: `인증코드: ${token}` // 내용
   }  
   transporter.sendMail( mailoptions , (error, info)=>{
     if (error) {	console.log(error);resolve(null);return false  }

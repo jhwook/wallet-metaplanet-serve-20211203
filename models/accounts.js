@@ -1,7 +1,7 @@
 /* jshint indent: 2 */
 
 module.exports = function(sequelize, DataTypes) {
-  return sequelize.define('sessionkeys', {
+  return sequelize.define('accounts', {
     id: {
       autoIncrement: true,
       type: DataTypes.INTEGER(10).UNSIGNED,
@@ -18,32 +18,23 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: true
     },
     username: {
-      type: DataTypes.STRING(40),
+      type: DataTypes.STRING(80),
       allowNull: true
     },
-    token: {
-      type: DataTypes.STRING(48),
+    address: {
+      type: DataTypes.STRING(80),
       allowNull: true
     },
-    ipaddress: {
-      type: DataTypes.STRING(64),
+    privatekey: {
+      type: DataTypes.STRING(100),
       allowNull: true
     },
-    useragent: {
-      type: DataTypes.STRING(1000),
-      allowNull: true
-    },
-    active: {
-      type: DataTypes.INTEGER(4),
-      allowNull: true,
-      defaultValue: 1
-    },
-    lastactive: {
-      type: DataTypes.STRING(30),
+    nettype: {
+      type: DataTypes.STRING(20),
       allowNull: true
     }
   }, {
     sequelize,
-    tableName: 'sessionkeys'
+    tableName: 'accounts'
   });
 };
