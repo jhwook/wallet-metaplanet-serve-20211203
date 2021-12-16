@@ -31,7 +31,9 @@ const sendseth=(jdata,tabletouse , modecollectorgeneral)=>{return new Promise((r
         if(amt2sendfloat+gasfee<=balancecustom){} else {console.log('Balance not enough(48286)'); reject({status:'ERR',message:'Balance not enough(48286)'});return false}
       const txData = {from:respacct['address']
         , to:rxaddr			, value:amt2sendwei // parseInt(tx.value.toString())- // tx.value.sub() // parseEther(amttoinc.toFixed(6)) //  parseEther( (rcvdamthexwei-).toString() )
-        , gasLimit:convtohex(GAS_LIMIT_ETH)			, gasPrice:convtohex(GAS_PRICE_ETH), data:'0x1'
+        , gasLimit:convtohex(GAS_LIMIT_ETH)			
+				, gasPrice:convtohex(GAS_PRICE_ETH)
+			//	, data:'0x1'
       }
 
       let resptxo={blockNumber:null,transactionHash:null} ;   console.log('sendinout',balance,txData)

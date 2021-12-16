@@ -1,8 +1,25 @@
 
-
 const db=require('../models')
 const {LOGGER}=require('./common')
+
+const tableexists=async tablename=>{
+  let resp=await db.sequelize.query(`SHOW TABLES LIKE '${tablename}'`)
+  return resp[0][0]
+}
+const fieldexists=async (tablename,fieldname)=>{
+  let resp=await db.sequelize.query (`SHOW COLUMNS FROM ${tablename} LIKE '${fieldname}'`)
+  return resp[0][0]
+}
 const findone=async(table,jfilter)=>          { return await db[table].findOne({raw:true,where:jfilter})}
+const togglefield=async (tablename , jfilter , fieldname)=>{
+  let resp =await findone(tablename , {... jfilter} ) 
+  if(resp){} else {return null}
+  let valuetoupdate = + resp[fieldname] ? 0 : 1
+  let jupdates={} ; jupdates[ fieldname] = valuetoupdate 
+  await updaterow(tablename , {id: resp.id} , {... jupdates } )
+  return valuetoupdate  
+}
+
 const findall=async(table,jfilter)=>          { return await db[table].findAll({raw:true,where:jfilter})}
 const updatetable=async(table,jfilter,jupdates)=>  { return await db[table].update(jupdates,{where:jfilter})}
 const updaterow=updatetable
@@ -38,7 +55,12 @@ const createifnoneexistent=async(table,jfilter,jupdates)=>{
 	if(resp){return null}
 	return await createrow(table,{...jfilter, ... jupdates})
 }
-module.exports={findone,findall,updatetable, updaterow , createrow,createorupdaterow , updateorcreaterow , incrementroworcreate 
+module.exports={
+	tableexists
+	, fieldexists
+	,	findone
+	, togglefield	
+	, findall,updatetable, updaterow , createrow,createorupdaterow , updateorcreaterow , incrementroworcreate 
   ,countrows , createifnoneexistent
 	, incrementrow
 }

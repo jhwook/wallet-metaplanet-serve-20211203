@@ -1,7 +1,7 @@
 /* jshint indent: 2 */
 
 module.exports = function(sequelize, DataTypes) {
-  return sequelize.define('balances', {
+  return sequelize.define('tokens', {
     id: {
       autoIncrement: true,
       type: DataTypes.INTEGER(10).UNSIGNED,
@@ -17,32 +17,42 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.DATE,
       allowNull: true
     },
+    name: {
+      type: DataTypes.STRING(20),
+      allowNull: true
+    },
+    symbol: {
+      type: DataTypes.STRING(20),
+      allowNull: true
+    },
+    decimals: {
+      type: DataTypes.INTEGER(4),
+      allowNull: true
+    },
     address: {
       type: DataTypes.STRING(80),
       allowNull: true
     },
-    username: {
+    writer: {
       type: DataTypes.STRING(80),
       allowNull: true
     },
-    amount: {
-      type: DataTypes.STRING(20),
-      allowNull: true
-    },
-    currency: {
-      type: DataTypes.STRING(20),
-      allowNull: true
+    active: {
+      type: DataTypes.INTEGER(4),
+      allowNull: true,
+      defaultValue: 1
     },
     nettype: {
       type: DataTypes.STRING(20),
       allowNull: true
     },
-    currencyaddress: {
-      type: DataTypes.STRING(80),
-      allowNull: true
+    istoken: {
+      type: DataTypes.INTEGER(4),
+      allowNull: true,
+      defaultValue: 1
     }
   }, {
     sequelize,
-    tableName: 'balances'
+    tableName: 'tokens'
   });
 };

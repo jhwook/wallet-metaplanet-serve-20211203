@@ -75,6 +75,15 @@ module.exports = function(sequelize, DataTypes) {
     useragent: {
       type: DataTypes.STRING(500),
       allowNull: true
+    },
+    icanlogin: {
+      type: DataTypes.INTEGER(4),
+      allowNull: true,
+      defaultValue: 1
+    },
+    lastactive: {
+      type: DataTypes.STRING(30),
+      allowNull: true
     }
   }, {
     sequelize,

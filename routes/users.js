@@ -2,10 +2,13 @@ var express = require('express');
 var router = express.Router();
 const {findone,findall,createrow , updaterow
 , countrows_scalar
+, createorupdaterow
 }=require('../utils/db')
 const { updaterow : updaterow_mon}=require('../utils/dbmon')
 const KEYS=Object.keys 
-const {LOGGER,generaterandomstr , generaterandomstr_charset , gettimestr }=require('../utils/common')
+const {LOGGER,generaterandomstr , generaterandomstr_charset , gettimestr
+	, convaj
+ }=require('../utils/common')
 const {respok,respreqinvalid,resperr , resperrwithstatus } =require('../utils/rest')
 const {messages}=require('../configs/messages')
 const {getuseragent , getipaddress}=require('../utils/session')
@@ -23,13 +26,75 @@ router.get('/', function(req, res, next) {
   res.send('respond with a resource');
 });
 const MAP_USERPREFS_KEYS={
-	notitransactions : 1
-	, notinotifies : 1
-	, notipromoevents : 1
+		NOTIFY_TRANSACTIONS_INSIDE : '0'
+	, NOTIFY_TRANSACTIONS_OUTSIDE : '0'
+	, NOTIFY_NOTIFIES : '0'
+	, NOTIFY_PROMOEVENTS : '0'
 }
-router.get('/userprefs',(req,res)=>{
+router.get('/transactions/inside',(req,res)=>{
   const username=getusernamefromsession(req);
   if(username){} else{resperr (res,messages.MSG_PLEASELOGIN);return}
+	findall('transactionsinside',{username}).then(list=>{
+		respok(res,null,null, { payload: {list} } )
+	})
+})
+router.get('/userprefs/notify',(req,res)=>{
+  const username=getusernamefromsession(req);
+  if(username){} else{resperr (res,messages.MSG_PLEASELOGIN);return}
+	findall('userprefs', { username
+		, active:1	
+	}).then( list =>{
+		if(list){
+			let jresp=convaj (list, 'key_', 'value_' ) 
+			let jdata ={} 
+			KEYS( MAP_USERPREFS_KEYS).forEach(elem=>{
+				if (jresp[ elem] ){jdata[ elem] = jresp[ elem] }
+				else { jdata[elem] = MAP_USERPREFS_KEYS[ elem] }
+			})
+			respok ( res,null,null, { payload:{
+				prefs : { ... jdata }
+			}})
+		} 
+		else {respok(res,null,null, {payload:{
+			prefs : { ... MAP_USERPREFS_KEYS }
+			} }  )	
+		}
+	})
+})
+router.post('/userprefs/notify/toggle/:keyname',(req,res)=>{
+  const username=getusernamefromsession(req);
+  if(username){} else{resperr (res,messages.MSG_PLEASELOGIN);return}
+	let { keyname  } = req.params
+	if(MAP_USERPREFS_KEYS[ keyname] ){}
+	else {resperr(res,messages.MSG_ARGINVALID , 38542 );return }
+	findone('userprefs',{username , key_: keyname}).then(resp=>{
+		if (resp){
+			let value_ = 1 ^ + resp.value_
+			updaterow('userprefs', {id : resp.id } , {value_ } ).then(resp=>{
+				respok( res, null, null , {payload : {aftertogglevalue : value_ } } ) 
+			})
+		} else {
+			let value_ = 1 ^ + MAP_USERPREFS_KEYS[ keyname ]
+			createrow('userprefs',{ username , key_ : keyname , value_ } ).then(resp=>{
+				respok(res,null,null, { payload : {aftertogglevalue: value_ } } ) 
+			})			
+		}
+	})
+})
+router.post('/userprefs/notify/:keyname/:value',(req,res)=>{
+  const username=getusernamefromsession(req);
+  if(username){} else{resperr (res,messages.MSG_PLEASELOGIN);return}
+	let { keyname , value } = req.params
+	if(MAP_USERPREFS_KEYS[ keyname] ){}
+	else {resperr(res,messages.MSG_ARGINVALID , 86627 );return }
+	value=+value
+	if(value==1 || value==0){}	
+	else {resperr(res,messages.MSG_ARGINVALID , 31686 );return}
+	createorupdaterow('userprefs' , {username , key_ : keyname} , {value_ : value} ).then(resp=>{
+		respok ( res,null,null, {payload: {aftertogglevalue : 
+			resp.dataValues.value_
+		}} )
+	})
 })
 const generate_token_and_store=(username, req)=>{
 	return new Promise ((resolve,reject)=>{
@@ -108,6 +173,18 @@ router.post('/user/myinfo',(req,res)=>{
   })
 })
 
+router.get('/user/crypto-account',(req,res)=>{
+  const username = getusernamefromsession(req);
+  if(username){} else{resperr(res,messages.MSG_PLEASELOGIN , 403);return}
+	findone('accounts',{username}).then(resp=>{
+		respok(res,null,null , {payload:{account : resp}})
+	}) 
+})
+/** username   | varchar(80)      | YES  |     | NULL                |                               |
+| address    | varchar(80)      | YES  |     | NULL                |                               |
+| privatekey | varchar(100)     | YES  |     | NULL                |                               |
+| nettype    | varchar(2
+*/
 router.get('/user/myinfo',async (req , res)=>{
   const username = getusernamefromsession(req);
   if(username){} else{resperr(res,messages.MSG_PLEASELOGIN , 403);return}
@@ -166,7 +243,9 @@ router.post('/login', async(req,res)=>{
 	findone('users', {username,pw}).then(async resp=>{
 		if(resp){}
 		else {resperr(res,messages.MSG_VERIFYFAIL);return}
-
+		let {icanlogin }= resp
+		if(icanlogin) {}
+		else {resperr(res,messages.MSG_AUTH_FAILED ); return}
 		let respacct = await findone( 'accounts' , { username } )
 //		let jacct= {}
 	//	jacct= { address : respacct.address , nettype : 'ETH-TESTNET' }

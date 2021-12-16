@@ -1,6 +1,18 @@
 
 const moment=require('moment')
 const KEYS=Object.keys
+const ISFINITE=Number.isFinite
+const { v4: uuidv4 } = require('uuid')
+const create_a_uuid=_=>{
+  return uuidv4()
+}
+const convaj=(arr,keyname,valuename)=>{
+	let jdata={}
+	arr.forEach(elem=>{
+		jdata[elem[keyname]] = elem[valuename]
+	})
+	return jdata
+}
 function generaterandomstr (length) {
   var result           = '';	var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   var charactersLength = characters.length;
@@ -66,8 +78,13 @@ const generaterandomstr_charset=(length,charsetcode)=>{let characters
 }
 
 // => 594ae48dcdc55777fdc05ceea4b40c45ec5118946a12797228dd8106e8f1e5fb
-module.exports={generaterandomhex, LOGGER:console.log , cyrb53 , hash53:cyrb53 , hashFnv32a,gettimestr ,gettimestr_raw , gettimestrwithspace , hashviasha256 
+module.exports={generaterandomhex, LOGGER:console.log
+	, KEYS
+	, ISFINITE 
+	, cyrb53 , hash53:cyrb53 , hashFnv32a,gettimestr ,gettimestr_raw , gettimestrwithspace , hashviasha256 
 	, filter_json_by_nonnull_criteria
+	, create_a_uuid
+	, convaj
 	, generaterandomstr
 	, generaterandomstr_charset
 }

@@ -11,6 +11,7 @@ const adminrouter=require('./routes/admin')
 const tickersrouter=require('./routes/tickers')
 const balancesrouter=require('./routes/balances')
 const contentsrouter=require('./routes/contents')
+const transactionsrouter=require('./routes/transactions')
 const cors=require('cors')
 var app = express();
 const wrap = asyncFn => {
@@ -33,9 +34,12 @@ app.use(cookieParser());
 app.use(wrap(async(req,res,next)=>{let token=req.headers.token
   if (token){     const resp=await findone('sessionkeys',{token:token,active:1})
     // LOGGER('bXcKR6bgGp',resp)
-    if(resp){req.username=resp.username // ;req.userlevel=resp.level
-      req.userdata = resp
-      updatetable('sessionkeys',{id:resp.id },{lastactive:gettimestr()}) // token:token,active:1
+    if(resp){
+			let { username } =resp
+			req.username=username // ;req.userlevel=resp.level	//      req.userdata = resp
+			let lastactive= gettimestr()
+      updatetable('sessionkeys'	,{id:resp.id },{ lastactive }) // token:token,active:1
+      updatetable('users' 			, { username },{ lastactive }) // token:token,active:1
     }
     else {  // req.userlevel=null
     }
@@ -51,6 +55,7 @@ app.use('/admin', adminrouter);
 app.use('/tickers', tickersrouter);
 app.use('/balances', balancesrouter);
 app.use('/contents', contentsrouter);
+app.use('/transactions', transactionsrouter);
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));

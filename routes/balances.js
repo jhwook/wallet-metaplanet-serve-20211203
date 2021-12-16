@@ -7,7 +7,7 @@ const {respok , resperr } =require('../utils/rest')
 const {getusernamefromsession}=require('../utils/session')
 const cliredisa=require('async-redis').createClient()
 const KEYS=Object.keys
-
+const {messages}=require('../configs/messages')
 let jcurrencies = {'ETH': 1 , 'METAPLANET':1}  
 const convaj=(arr,keyfieldname , valuefieldname )=>{
 	let jdata={}
@@ -18,6 +18,8 @@ const convaj=(arr,keyfieldname , valuefieldname )=>{
 }
 router.get('/', (req,res)=>{
 	let username = getusernamefromsession(req)
+	if(username){}
+	else {resperr(res,messages.MSG_PLEASELOGIN);return}
 	findall( 'balances' , { username }).then(resp=>{	
 		let jresp={}
 		if(resp){
