@@ -1,0 +1,124 @@
+
+const {web3wss}=require( '../configs/configweb3');
+const db = require('../models');
+const { tableexists
+	, fieldexists
+	, togglefield
+	, createrow 
+	, incrementrow
+	, findone
+	, findall
+	,	countrows_scalar
+}=require('../utils/db');
+let { Op } = db.Sequelize;
+const moment = require('moment');
+const LOGGER=console.log
+const TOKEN_CONTRACT_ADDRESS = '0x70E509A0d868F023A8A16787bd659a3bb1357eE1'
+var subscription = web3wss.eth.subscribe('logs',
+	{ fromBlock: 13_000_000, 
+		topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"] 
+ ,		address : TOKEN_CONTRACT_ADDRESS // ''
+	} 
+	, LOGGER )
+	.on("data", function ( txdata ){
+		LOGGER( txdata );
+    let data = {
+      removed: String(txdata.removed),
+      logIndex: String(txdata.logIndex),
+      transactionIndex: String(txdata.transactionIndex),
+      transactionHash: txdata.transactionHash,
+      blockHash: txdata.blockHash,
+      blockNumber: String(txdata.blockNumber),
+      address: txdata.address,
+      data: txdata.data,
+      topics: `${txdata.topics[0]};${txdata.topics[1]};${txdata.topics[2]}`,
+      id: txdata.id
+  }
+  console.log("data----------------");
+  console.log(data);
+  createrow('transactionsoutside20220101', data).then( resp=> {
+    console.log(resp);
+  });
+});
+
+// const txdata01 = 
+// {
+//   removed: false,
+//   logIndex: 8,
+//   transactionIndex: 26,
+//   transactionHash: '0x6278d4ce81260b9a6d8462e734769246f2b7b6b72eb0012b8ebc191c0a883d35',
+//   blockHash: '0x871c676e1114e11259fa4974312247037206c57faf13dd85b013455e498df7ec',
+//   blockNumber: 11725487,
+//   address: '0x70E509A0d868F023A8A16787bd659a3bb1357eE1',
+//   data: '0x00000000000000000000000000000000000000000000000000000000000f4240',
+//   topics: [
+//     '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+//     '0x0000000000000000000000005c7552f154d81a99e2b5678fc5fd7d1a4085d8d7',
+//     '0x00000000000000000000000053ff313fadf40d0bf21424f382c5bf6cf10204c5'
+//   ],
+//   id: 'log_4b2ca477'
+// }
+/** {
+  removed: false,
+  logIndex: 5,
+  transactionIndex: 2,
+  transactionHash: '0x5e98092e9392bcd1b13d845b01509e5ddac0b796372db7a89d3084095fc340a4',
+  blockHash: '0x49e36e9755bd920ce916e364b84de90871595a507917b34121857decefc18da8',
+  blockNumber: 11725443,
+  address: '0xC01D99D33b96e904aCA9B76aa71442eCCf496d82',
+  data: '0x000000000000000000000000000000000000000000001b87506a3e7b0d400000',
+  topics: [
+    '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+    '0x0000000000000000000000008309684350bcaaaaaf75816a35764737fe27215a',
+    '0x000000000000000000000000c30fe506f2347b453c2283d8bbb38ad8f0f81775'
+  ],
+  id: 'log_50018847'
+}*/
+// const txdata02 = {
+//   removed: false,
+//   logIndex: 26,
+//   transactionIndex: 41,
+//   transactionHash: '0x1d9724bbd7d017cdc888055bd452f53801d5e94dcb71263b179901ed89a2632f',
+//   blockHash: '0x6d658bfcf02f8599c16bd7aff30203683d4210ba492e8451afe6aaad1826f1ee',
+//   blockNumber: 11725541,
+//   address: '0x70E509A0d868F023A8A16787bd659a3bb1357eE1',
+//   data: '0x00000000000000000000000000000000000000000000000000000000000f4240',
+//   topics: [
+//     '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+//     '0x00000000000000000000000008f61493539e166810bbb06c28f73323d1a2d202',
+//     '0x000000000000000000000000c35ec349ca8cc32c3775e3da9a310ec8e421abfe'
+//   ],
+//   id: 'log_aa542f66'
+// } 
+// const txdata03 ={
+//   removed: false,
+//   logIndex: 35,
+//   transactionIndex: 98,
+//   transactionHash: '0xc9dbfb63b008a563abf3a2c5d39fd07579d33e8a395d979054a64050695cc474',
+//   blockHash: '0x6d658bfcf02f8599c16bd7aff30203683d4210ba492e8451afe6aaad1826f1ee',
+//   blockNumber: 11725541,
+//   address: '0x70E509A0d868F023A8A16787bd659a3bb1357eE1',
+//   data: '0x00000000000000000000000000000000000000000000000000000000000f4240',
+//   topics: [
+//     '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+//     '0x0000000000000000000000005c7552f154d81a99e2b5678fc5fd7d1a4085d8d7',
+//     '0x000000000000000000000000a7f4348c096edb86b0d6baa224d514306e962ec8'
+//   ],
+//   id: 'log_1693b915'
+// }
+// const getnewblocks = _=>{
+// 	web3wss.eth.subscribe('newBlockHeaders', function(error, result){
+// 		if (!error) {
+// 				console.log(result);
+// 				return;
+// 		}
+// 		console.error(error);
+// 	})
+// 	.on("connected", function(subscriptionId){
+// 		console.log(subscriptionId);
+// 	})
+// 	.on("data", function(blockHeader){
+// 		console.log(blockHeader);
+// 	})
+// 	.on("error", console.error);
+// }

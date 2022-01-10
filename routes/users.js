@@ -19,9 +19,20 @@ const db=require('../models')
 const {getusernamefromsession}=require('../utils/session')
 // const { createrow:createrow_mon , updaterow : updaterow_mon }=require('../utils/dbmon')
 const TOKENLEN=48
-const { createaccount }=require('../configs/configweb3')
+const { web3, createaccount }=require('../configs/configweb3')
+//const { getWalletRecode } = require("../utils/wallet_recode");
+const { getWalletRecode } = require("../utils/wallet_recode");
+const { getMetaplanetRecode } = require("../utils/wallet_recode_metaplanet");
+const { getPolygon } = require("../utils/get_polygon");
 let nettype='ETH-TESTNET'
 /* GET users listing. */
+
+
+//getPolygon().then(resp=>{
+//	console.log(resp);
+//});
+
+
 router.get('/', function(req, res, next) {
   res.send('respond with a resource');
 });
@@ -31,6 +42,30 @@ const MAP_USERPREFS_KEYS={
 	, NOTIFY_NOTIFIES : '0'
 	, NOTIFY_PROMOEVENTS : '0'
 }
+router.get('/history/eth/:address/:pageNum/:pageSize',(req,res)=>{
+	const { address, pageNum, pageSize } = req.params;
+	getWalletRecode(address, pageNum, pageSize).then(resp=> {
+		respok ( res, null, null , {payload : {
+			getData: resp
+		}})
+	})
+})
+router.get('/history/metaplanet/:address/:pageNum/:pageSize',(req,res)=>{
+	const { address, pageNum, pageSize } = req.params;
+	getMetaplanetRecode(address, pageNum, pageSize).then(resp=> {
+		respok ( res, null, null , {payload : {
+			getData: resp
+		}})
+	})
+})
+router.get('/polygon',(req,res)=>{
+//	const { date1, date2 } = req.params;
+	getPolygon().then(resp=>{
+		respok ( res, null, null , {payload : {
+			getData: resp
+		}})
+	});
+})
 router.get('/transactions/inside',(req,res)=>{
   const username=getusernamefromsession(req);
   if(username){} else{resperr (res,messages.MSG_PLEASELOGIN);return}
@@ -116,11 +151,13 @@ router.post('/join',(req,res)=>{let {
 	username 
 	, nickname
 	, pw 
-	, email  }=req.body ; LOGGER('' , req.body)
+	, email
+	, currentBlockNumber  }=req.body ; LOGGER('' , req.body)
 	if(username && pw ){} else {resperr(res, messages.MSG_ARGMISSING,40761);return false}
 	findone( 'users' , {username} ).then(respuser=>{ // email 
 		if(respuser){resperr(res,messages.MSG_ID_DUP,82532);return false}
-		createrow('users', {username
+		createrow('users', {
+		username
 		, nickname
 		, pw
 		, ip : getipaddress(req)
@@ -129,18 +166,23 @@ router.post('/join',(req,res)=>{let {
 //		, pwhash:hasher(pw)
 	}) //    db.operations.findOne({raw:true,where:{key_:'CURRENCIES'}}).then(respcurr=>{      const currencies=JSON.parse(respcurr['value_'])
 	let acct = createaccount()
+
+	console.log("currentBlockNumber:");
+	console.log(currentBlockNumber);
 	createrow('accounts' , {
-		username
+		username: username
 		, ... acct
 		, privatekey : acct.privateKey
 		, nettype
+		, currentBlockNumber: currentBlockNumber
+		, firstUsedBlockNumber: currentBlockNumber
 	}).then(resp=>{
 		generate_token_and_store(username , req).then(token=>{
 			respok(res,null,null , {payload : {
 				address : acct . address 
 				, nettype
 				, token
-			}})
+			}, currentBlockNumber: currentBlockNumber})
 		})
 	})
 	false && callhook({name:username,path:'join'});return false
@@ -242,10 +284,10 @@ router.post('/login', async(req,res)=>{
 //  }
 	findone('users', {username,pw}).then(async resp=>{
 		if(resp){}
-		else {resperr(res,messages.MSG_VERIFYFAIL);return}
+		else {resperr(res,messages.MSG_VERIFYFAIL);LOGGER(messages.MSG_VERIFYFAIL);return}
 		let {icanlogin }= resp
 		if(icanlogin) {}
-		else {resperr(res,messages.MSG_AUTH_FAILED ); return}
+		else {resperr(res,messages.MSG_AUTH_FAILED );LOGGER(messages.MSG_AUTH_FAILED); return}
 		let respacct = await findone( 'accounts' , { username } )
 //		let jacct= {}
 	//	jacct= { address : respacct.address , nettype : 'ETH-TESTNET' }

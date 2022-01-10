@@ -1,7 +1,6 @@
-/* jshint indent: 2 */
 
 module.exports = function(sequelize, DataTypes) {
-  return sequelize.define('accounts', {
+  return sequelize.define('transactionsoutside_2022_01_01', {
     id: {
       autoIncrement: true,
       type: DataTypes.INTEGER(10).UNSIGNED,
@@ -33,18 +32,19 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.STRING(20),
       allowNull: true
     },
-		currentBlockNumber: {
-			type: DataTypes.BIGINT(12).UNSIGNED,
-			allowNull: false,
-			defaultValue: 10000000
-  	},
-		firstUsedBlockNumber: {
-			type: DataTypes.BIGINT(12).UNSIGNED,
-			allowNull: false,
-			defaultValue: 11000000
-		},
-	},{
+    currentBlockNumber: {
+      type: DataTypes.BIGINT(12).UNSIGNED,
+      allowNull: false,
+      defaultValue: 10000000
+    },
+    firstUsedBlockNumber: {
+      type: DataTypes.BIGINT(12).UNSIGNED,
+      allowNull: false,
+      defaultValue: 11000000
+    },
+  },{
     sequelize,
     tableName: 'accounts'
   });
 };
+

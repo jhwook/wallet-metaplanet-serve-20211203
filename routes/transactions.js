@@ -12,6 +12,8 @@ router.post('/transaction/imadeatx/:txhash',(req,res)=>{
   const username=getusernamefromsession(req);
   if(username){} else{resperr (res,messages.MSG_PLEASELOGIN);return}
 	let {txhash}=req.params
+	let {from_     , to_            , amount    , currency  , nettype , typestr  }=req.body
+
 	let TABLENAME='transactionsoutside'
 	findone( TABLENAME , {
 		txhash
@@ -23,7 +25,8 @@ router.post('/transaction/imadeatx/:txhash',(req,res)=>{
 				{ username
 					, txhash
 					, nettype : NETTYPE
-					, typestr: 'SEND-ETH'
+//					, typestr: 'SEND-ETH'
+					, ... req.body
 				}
 			).then(resp=>{
 				respok ( res )

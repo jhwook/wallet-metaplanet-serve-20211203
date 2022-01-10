@@ -55,6 +55,16 @@ const createifnoneexistent=async(table,jfilter,jupdates)=>{
 	if(resp){return null}
 	return await createrow(table,{...jfilter, ... jupdates})
 }
+
+const countrows_scalar = (table,jfilter)=>{
+  return new Promise ((resolve,reject)=>{
+    db[table].count({where:{... jfilter} } ).then(resp=>{
+      if(resp)  {resolve( resp)}
+      else      {resolve( )    }
+    })
+  })
+}
+
 module.exports={
 	tableexists
 	, fieldexists
@@ -63,6 +73,7 @@ module.exports={
 	, findall,updatetable, updaterow , createrow,createorupdaterow , updateorcreaterow , incrementroworcreate 
   ,countrows , createifnoneexistent
 	, incrementrow
+	, countrows_scalar
 }
 
 const test=_=>{
