@@ -2,6 +2,9 @@
 const moment=require('moment')
 const KEYS=Object.keys
 const ISFINITE=Number.isFinite
+const STRINGER=JSON.stringify
+const PARSER=JSON.parse
+
 const { v4: uuidv4 } = require('uuid')
 const create_a_uuid=_=>{
   return uuidv4()
@@ -81,6 +84,8 @@ const generaterandomstr_charset=(length,charsetcode)=>{let characters
 module.exports={generaterandomhex, LOGGER:console.log
 	, KEYS
 	, ISFINITE 
+	, STRINGER
+	, PARSER
 	, cyrb53 , hash53:cyrb53 , hashFnv32a,gettimestr ,gettimestr_raw , gettimestrwithspace , hashviasha256 
 	, filter_json_by_nonnull_criteria
 	, create_a_uuid

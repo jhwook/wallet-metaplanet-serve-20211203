@@ -7,6 +7,7 @@ const {respok , resperr } =require('../utils/rest')
 const {getusernamefromsession}=require('../utils/session')
 const cliredisa=require('async-redis').createClient()
 const KEYS=Object.keys
+const LOGGER=console.log
 const {messages}=require('../configs/messages');
 const { getBalances } = require('../contracts/getBalances');
 const { getBalancesToken } = require('../contracts/getBalances_token');

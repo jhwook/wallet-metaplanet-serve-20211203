@@ -1,7 +1,6 @@
 
 const { wen3 , web3wss }=require( '../configs/configweb3');
 const db = require('../models')
-const { findone } = require('../utils/db')
 const { tableexists
 	, fieldexists
 	, togglefield
@@ -29,9 +28,12 @@ findone('settings' , {key_ : 'tokencontract'} ).then(resp=>{
 })
 const conv_log_field_to_address = str=>{	return web3.utils.toChecksumAddress( str.substr(str.length-40 ) 	)
 }
+
+let TX_EVENT_SIG="0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+LOGGER(`subscribing to ${TX_EVENT_SIG} ,\n ${TOKEN_CONTRACT_ADDRESS} `)
 var subscription = web3wss.eth.subscribe('logs',
 	{ fromBlock: 13_000_000, 
-		topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"] 
+		topics: [ TX_EVENT_SIG ] 
  ,		address : TOKEN_CONTRACT_ADDRESS // ''
 	} 
 	, _=>{} )
@@ -62,7 +64,7 @@ var subscription = web3wss.eth.subscribe('logs',
 		let [ nettype , currency , namespace ] = aresps
 		let from_ = conv_log_field_to_address ( txdata.topics[ 1 ] )
 		let to_   = conv_log_field_to_address ( txdata.topics[ 2 ] )
-		let uuid = uuidv5 ( txdata. , namespace )
+		let uuid = uuidv5 ( txhash , namespace )
 		createrow ('transactionsoutside' , {
 			username : ''
 	 , from_

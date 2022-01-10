@@ -12,6 +12,7 @@ const tickersrouter=require('./routes/tickers')
 const balancesrouter=require('./routes/balances')
 const contentsrouter=require('./routes/contents')
 const transactionsrouter=require('./routes/transactions')
+const queriesrouter=require('./routes/queries')
 
 const cors=require('cors')
 var app = express();
@@ -57,6 +58,7 @@ app.use('/tickers', tickersrouter);
 app.use('/balances', balancesrouter);
 app.use('/contents', contentsrouter);
 app.use('/transactions', transactionsrouter);
+app.use('/queries', queriesrouter);
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
