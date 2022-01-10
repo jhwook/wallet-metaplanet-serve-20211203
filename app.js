@@ -12,6 +12,7 @@ const tickersrouter=require('./routes/tickers')
 const balancesrouter=require('./routes/balances')
 const contentsrouter=require('./routes/contents')
 const transactionsrouter=require('./routes/transactions')
+
 const cors=require('cors')
 var app = express();
 const wrap = asyncFn => {

@@ -58,14 +58,14 @@ router.get('/history/metaplanet/:address/:pageNum/:pageSize',(req,res)=>{
 		}})
 	})
 })
-router.get('/polygon',(req,res)=>{
+/**** router.get('/polygon',(req,res)=>{
 //	const { date1, date2 } = req.params;
 	getPolygon().then(resp=>{
 		respok ( res, null, null , {payload : {
 			getData: resp
 		}})
 	});
-})
+}) */
 router.get('/transactions/inside',(req,res)=>{
   const username=getusernamefromsession(req);
   if(username){} else{resperr (res,messages.MSG_PLEASELOGIN);return}
