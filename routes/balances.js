@@ -201,36 +201,64 @@ router.get('/getbalances/totalAmount/inside/:username', (req, res)=>{
 	// });
 });
 /**************** */
+let TOKEN_NAME = 'METAPLANET'
 router.get('/getbalances/sum/:senderAddress/:username', (req,res)=>{
 	let {senderAddress, username} = req.params;
-	if(!senderAddress){resperr (res, messages.MSG_PLEASELOGIN); return;}
-	getBalances(senderAddress).then(resp1=>{
-		LOGGER("eth: " , resp1)
-		getBalancesToken(senderAddress).then(resp2=>{
-			LOGGER("token:" , resp2) //			LOG GER(resp2);
-			findall('tokens', {nettype:'ETH-TESTNET'}).then(listtokens =>{
-				findall("transactionsinside", {username} )
-				.then( list => {
-					let jreturndata = {} 
-					listtokens.forEach(token=>{
-						let listfiltered = list.filter(txelem =>  token == txelem.currency )
-						jreturndata [token.name] = listfiltered.length ? listfiltered.reduce ( (a,b)=> +a.amount + +b.amount ) : 0
-					})
-//					LOGGER("innerRecode:");	//				LOGGER(jreturndata)		//			LOGGER("output:");
-					LOGGER({
-						ethSum: getethrep(+resp1 + +jreturndata.ETH),
-						tokenSum: +resp2 + +jreturndata.METAPLANET
-					})
-					respok ( res, null, null , { payload : {
-						ETH: getethrep(+resp1 + +jreturndata.ETH),
-						METAPLANET: getethrep(+resp2 + +jreturndata.METAPLANET)
-					}})
-				} );	
-			})
-		});
-	});
-});
+	if(!senderAddress){resperr (res, messages.MSG_PLEASELOGIN); return }	
+	let aproms=[]
+	aproms[ aproms.length ] = getBalances( senderAddress ) // 0
+	aproms[ aproms.length ] = getBalancesToken( senderAddress ) // 1
+	aproms[ aproms.length ] = cliredisa.hgetall ( 'TICKERS-USDT' ) // 2
+	aproms[ aproms.length ] = findall( 'tokens', { nettype : 'ETH-TESTNET' }) // 3
+	aproms[ aproms.length ] = findall( "transactionsinside", {username} ) // 4
+	aproms[ aproms.length ] = findone( 'settings' , { key_ : 'TOKEN_DECIMALS' } ) // 5
 
+	Promise.all ( aproms).then( aresps => {
+		let [ balance_eth 
+			, balance_token 
+			, tickers			
+			, listtokens 
+			, listtransactions
+			, resp_decimals
+		]=aresps
+///		findall('tokens', { nettype : 'ETH-TESTNET' }).then(listtokens =>{
+//			findall("transactionsinside", {username} )			.then( list => {
+				let jreturndata = {}
+				listtokens.forEach(token=>{
+					let listfiltered = listtransactions.filter(txelem =>  token == txelem.currency )
+					jreturndata [token.name] = listfiltered.length ? listfiltered.reduce ( (a,b)=> +a.amount + +b.amount ) : 0
+				}) //					LOGGER("innerRecode:");	//				LOGGER(jreturndata)		//			LOGGER("output:");
+				let amount_eth = getethrep(+balance_eth + +jreturndata.ETH )
+				let amount_token = +balance_token / 10** +resp_decimals.value_ + +jreturndata.METAPLANET 
+				LOGGER({
+					ethSum: amount_eth ,
+					tokenSum: amount_token
+				})
+				respok ( res, null, null , { payload : {
+					ETH: amount_eth  ,
+					METAPLANET: amount_token
+				} , normprices : {
+										'ETH-USDT' :	tickers['ETH-USDT'] ? + tickers['ETH-USDT'] * amount_eth : 0
+					, 'METAPLANET-USDT' :		tickers['METAPLANET-USDT'] ? + tickers['METAPLANET-USDT'] * amount_token : 0
+				}
+			})
+//			} );	
+//		})
+	})
+//	getBalances(senderAddress).then(balance_eth=>{
+	//	LOGGER("eth: " , balance_eth)
+		// getBalancesToken(senderAddress).then(balance_token=>{
+//			LOGGER("token:" , balance_token ) //			LOG GER(balance_token);
+//		});
+// })
+})
+
+/**  {
+  'BTC-USDT': '41693.52000000',
+  'ETH-USDT': '3120.04000000',
+  'BNB-USDT': '435.00000000',
+  'METAPLANET-USDT': '1528'
+}*/
 
 		// let sum = 0;
 		// for (let i in list){ sum += Number(list[i].amount); }

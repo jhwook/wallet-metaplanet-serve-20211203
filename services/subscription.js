@@ -54,7 +54,7 @@ var subscription = web3wss.eth.subscribe('logs',
   try { createrow('transactionsoutside20220101', data).then( resp=> {//    console.log(resp);
 	}) } catch (err){ LOGGER(err) }
 	let txhash = txdata.transactionHash
-	if ( txhash ){}
+	if ( txhash ) {}
 	else {LOGGER('AWOpGYWXtV') ; return }
 	let aproms=[]
 	aproms[aproms.length ] = findone('settings' , { key_ : 'ACTIVE_NETWORK'} )
