@@ -1,6 +1,7 @@
 
-const {web3wss}=require( '../configs/configweb3');
-const db = require('../models');
+const { wen3 , web3wss }=require( '../configs/configweb3');
+const db = require('../models')
+const { findone } = require('../utils/db')
 const { tableexists
 	, fieldexists
 	, togglefield
@@ -12,16 +13,29 @@ const { tableexists
 }=require('../utils/db');
 let { Op } = db.Sequelize;
 const moment = require('moment');
-const LOGGER=console.log
-const TOKEN_CONTRACT_ADDRESS = '0x70E509A0d868F023A8A16787bd659a3bb1357eE1'
+const LOGGER=console.log // const TOKEN_NAME_DEF = 'METAPLANET'
+let { v5 : uuidv5 } = require('uuid')
+let  TOKEN_CONTRACT_ADDRESS = '0x70E509A0d868F023A8A16787bd659a3bb1357eE1'
+const MAP_TX_TYPES = { 
+		'RECEIVE-ETH' : 0
+	, 'SEND-ETH' : 1
+	, 'RECEIVE-TOKEN' : 2
+	, 'SEND-TOKEN' : 3
+}
+findone('settings' , {key_ : 'tokencontract'} ).then(resp=>{
+	if(resp && resp.value_ && resp.value_.length == 42 ){}
+	else {return }
+	TOKEN_CONTRACT_ADDRESS = resp.value_
+})
+const conv_log_field_to_address = str=>{	return web3.utils.toChecksumAddress( str.substr(str.length-40 ) 	)
+}
 var subscription = web3wss.eth.subscribe('logs',
 	{ fromBlock: 13_000_000, 
 		topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"] 
  ,		address : TOKEN_CONTRACT_ADDRESS // ''
 	} 
-	, LOGGER )
-	.on("data", function ( txdata ){
-		LOGGER( txdata );
+	, _=>{} )
+	.on("data", async txdata  => {		LOGGER( '' , txdata );
     let data = {
       removed: String(txdata.removed),
       logIndex: String(txdata.logIndex),
@@ -33,16 +47,38 @@ var subscription = web3wss.eth.subscribe('logs',
       data: txdata.data,
       topics: `${txdata.topics[0]};${txdata.topics[1]};${txdata.topics[2]}`,
       id: txdata.id
-  }
-  console.log("data----------------");
-  console.log(data);
-  createrow('transactionsoutside20220101', data).then( resp=> {
-    console.log(resp);
-  });
-});
-
-// const txdata01 = 
-// {
+		}
+//  LOGGER("data----------------")   console.log(data);
+  try { createrow('transactionsoutside20220101', data).then( resp=> {//    console.log(resp);
+	}) } catch (err){ LOGGER(err) }
+	let txhash = txdata.transactionHash
+	if ( txhash ){}
+	else {LOGGER('AWOpGYWXtV') ; return }
+	let aproms=[]
+	aproms[aproms.length ] = findone('settings' , { key_ : 'ACTIVE_NETWORK'} )
+	aproms[aproms.length ] = findone('settings' , { key_ : 'TOKEN_NAME_DEF' })
+	aproms[aproms.length ] = findone('settings' , { key_ : 'NAMESPACE_DEF'} )
+	Promise.all ( aproms).then(aresps=>{
+		let [ nettype , currency , namespace ] = aresps
+		let from_ = conv_log_field_to_address ( txdata.topics[ 1 ] )
+		let to_   = conv_log_field_to_address ( txdata.topics[ 2 ] )
+		let uuid = uuidv5 ( txdata. , namespace )
+		createrow ('transactionsoutside' , {
+			username : ''
+	 , from_
+	 , to_
+	 , txhash
+	 , amount    : web3.utils.fromWei( txdata.data )
+	 , currency
+	 , nettype
+	 , writer    : ''
+	 , type      : MAP_TX_TYPES [ 'RECEIVE-TOKEN' ]
+	 , typestr   : 'RECEIVE-TOKEN'
+	 , uuid
+	 })	
+	})
+})
+// const txdata01 = // {
 //   removed: false,
 //   logIndex: 8,
 //   transactionIndex: 26,
@@ -122,3 +158,16 @@ var subscription = web3wss.eth.subscribe('logs',
 // 	})
 // 	.on("error", console.error);
 // }
+/**  > desc transactionsoutside;
+| username  | varchar(80)
+| from_     | varchar(80)
+| to_       | varchar(80)
+| txhash    | varchar(80)
+| amount    | varchar(20)
+| currency  | varchar(20)
+| nettype   | varchar(20)
+| writer    | varchar(80)
+| type      | tinyint(4) 
+| typestr   | varchar(20)
+| uuid      | varchar(50)
+*/

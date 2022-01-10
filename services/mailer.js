@@ -3,11 +3,11 @@ const nodemailer = require('nodemailer')
 // const configemail={	user:'cryptobank00@gmail.com'	, pass: 'zmflqxh1!'} // ''ymBEK2nXd6 
 const configemail={	
 		user:'meta.planet37@gmail.com'	
-	, pass: 'u46jVruvGWAfXN2' 
+	, pass: 'u46jVruvGWAfXN2'
 } // ''ymBEK2nXd6 zmflqxh1!' 9t~Z(M]{&p'
 
 const {generaterandomstr_charset,generaterandomstr,  gettimestr, LOGGER}=require('../utils/common')
-const STR_SERVICE_NAME='Collector.Place'
+const STR_SERVICE_NAME='Metaplanet'
 const cliredisa=require('async-redis').createClient()
 const KEYNAME_EMAILCODE='EMAILCODE' // require('../con figs/configs')
 const {findall , findone, updateorcreaterow }=require('../utils/db')
