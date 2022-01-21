@@ -7,12 +7,14 @@ let {create_a_uuid , gettimestr }=require('../utils/common')
 const {getusernamefromsession}=require('../utils/session')
 const { findone,createrow}=require('../utils/db')
 const { messages}=require('../configs/messages') 
-let NETTYPE='ETH-TESTNET'
+const { v5 : uuidv5 } =require('uuid')
+const { NETTYPE } =require('../configs/net' )
+// let NET TYPE='ETH-TESTNET'
 router.post('/transaction/imadeatx/:txhash',(req,res)=>{
   const username=getusernamefromsession(req);
   if(username){} else{resperr (res,messages.MSG_PLEASELOGIN);return}
 	let {txhash}=req.params
-	let {from_     , to_            , amount    , currency  , nettype , typestr  }=req.body
+	let {from_     , to_            , amount    , currency  , nettype : NETTYPE , typestr  }=req.body
 
 	let TABLENAME='transactionsoutside'
 	findone( TABLENAME , {
@@ -21,10 +23,13 @@ router.post('/transaction/imadeatx/:txhash',(req,res)=>{
 		if(resp){
 			resperr(res,messages.MSG_DATADUPLICATE);return
 		} else {
+			let uuid = uuidv5 ( txhash , Array.from ( Array(16).keys() ) )
 			createrow( TABLENAME , 
 				{ username
 					, txhash
 					, nettype : NETTYPE
+					, supertype : typestr.match ( /^RECEIVE/ ) ? 1 : 2
+					, uuid
 //					, typestr: 'SEND-ETH'
 					, ... req.body
 				}
@@ -34,16 +39,19 @@ router.post('/transaction/imadeatx/:txhash',(req,res)=>{
 		}
 	})
 })
-/** username  | varchar(80)      | YES  |     | NULL                |                               |
-| from_     | varchar(80)      | YES  |     | NULL                |                               |
-| to_       | varchar(80)      | YES  |     | NULL                |                               |
-| txhash    | varchar(80)      | YES  |     | NULL                |                               |
-| amount    | varchar(20)      | YES  |     | NULL                |                               |
-| currency  | varchar(20)      | YES  |     | NULL                |                               |
-| nettype   | varchar(20)      | YES  |     | NULL                |                               |
-| writer    | varchar(80)      | YES  |     | NULL                |                               |
-| type      | tinyint(4)       | YES  |     | NULL                |                               |
-| typestr   | varchar(20)      | YES  |     | NULL 
+/** 
+  username  | varchar(80)
+| from_     | varchar(80)
+| to_       | varchar(80)
+| txhash    | varchar(80)
+| amount    | varchar(20)
+| currency  | varchar(20)
+| nettype   | varchar(20)
+| writer    | varchar(80)
+| type      | tinyint(4) 
+| typestr   | varchar(20)
+| uuid      | varchar(50)
+| supertype | tinyint(4) 
 */
 
 router.post('/withdraw/:token/:amount/:toaddress',(req,res)=>{

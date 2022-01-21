@@ -25,16 +25,49 @@ const { web3, createaccount }=require('../configs/configweb3')
 const { getWalletRecode } = require("../utils/wallet_recode");
 const { getMetaplanetRecode } = require("../utils/wallet_recode_metaplanet");
 const { getPolygon } = require("../utils/get_polygon");
-let nettype='ETH-TESTNET'
+// let nettype='ETH-TESTNET'
 
+router.get('/:tablename' , (req,res)=>{
+	let { tablename } =req.params
+	findall ( tablename , {}).then(resp=>{
+		respok ( res, null ,null , { list : resp } )
+	})
+})
+
+router.put('/row/:tablename/:fieldname/:fieldval', (req,res)=>{
+	let { tablename , fieldname , fieldval } =req.params ;	LOGGER('' , req.body)
+	fieldexists (tablename , fieldname).then(resp=>{
+		if(resp){}
+		else {resperr( res, messages.MSG_DATANOTFOUND ); return }
+		let jfilter={}
+		jfilter[ fieldname ]  = fieldval
+		updaterow( tablename , { ... jfilter } , {... req.body} ).then(resp=>{
+			respok ( res ) 
+		})
+	})
+})
+router.get('/rows/:tablename/:fieldname/:fieldval' , (req,res)=>{
+	let { tablename , fieldname , fieldval }=req.params
+	fieldexists (tablename, fieldname).then(resp=>{
+		if(resp){}
+		else {resperr( res, messages.MSG_DATANOTFOUND ); return }
+		let jfilter ={}
+		jfilter [ fieldname ]= fieldval
+		findall( tablename , { ... jfilter} ).then(list =>{
+			if (resp){} 
+			else {} // resperr( res, messages.MSG_DATANOTFOUND); return }
+			respok ( res, null, null ,{list } )
+		})
+	})
+})
 router.get('/:tablename/:fieldname/:fieldval' , (req,res)=>{
 	let {tablename , fieldname , fieldval }=req.params
-	if (tablename=='users'){resperr(res , messages.MSG_NOT_PRIVILEGED ) ; return }
+//	if (tablename=='users'){resperr(res , messages.MSG_NOT_PRIVILEGED ) ; return }
 	fieldexists ( tablename , fieldname).then(resp=>{
 		if (resp){}
 		else { resperr( res, messages.MSG_DATANOTFOUND); return }
-		let  jfitler = {}
-		jfilter [ fieldnamn ]  = fieldval
+		let  jfilter = {}
+		jfilter [ fieldname ]  = fieldval
 		findone ( tablename , {... jfilter } ).then(resp=>{
 			if ( resp) {}
 			else {resperr( res, messages.MSG_DATANOTFOUND ) ; return }

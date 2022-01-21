@@ -84,6 +84,32 @@ module.exports = function(sequelize, DataTypes) {
     lastactive: {
       type: DataTypes.STRING(30),
       allowNull: true
+    },
+    countincrements: {
+      type: DataTypes.INTEGER(10).UNSIGNED,
+      allowNull: true,
+      defaultValue: 0
+    },
+    countdecrements: {
+      type: DataTypes.INTEGER(10).UNSIGNED,
+      allowNull: true,
+      defaultValue: 0
+    },
+    dob: {
+      type: DataTypes.STRING(30),
+      allowNull: true
+    },
+    dobunix: {
+      type: DataTypes.BIGINT,
+      allowNull: true
+    },
+    phonenumber: {
+      type: DataTypes.STRING(30),
+      allowNull: true
+    },
+    realname: {
+      type: DataTypes.STRING(40),
+      allowNull: true
     }
   }, {
     sequelize,

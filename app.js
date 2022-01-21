@@ -13,6 +13,8 @@ const balancesrouter=require('./routes/balances')
 const contentsrouter=require('./routes/contents')
 const transactionsrouter=require('./routes/transactions')
 const queriesrouter=require('./routes/queries')
+const statsrouter=require('./routes/stats')
+const tokenenvrouter=require('./routes/tokenenv')
 
 const cors=require('cors')
 var app = express();
@@ -59,6 +61,8 @@ app.use('/balances', balancesrouter);
 app.use('/contents', contentsrouter);
 app.use('/transactions', transactionsrouter);
 app.use('/queries', queriesrouter);
+app.use('/stats', statsrouter);
+app.use('/tokenenv', tokenenvrouter);
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
@@ -81,5 +85,5 @@ let moment=require('moment')
 let cron = require('node-cron')
 const LOGGER=console.log
 cron.schedule('* * * * *', _=>{
-	LOGGER(gettimestr())
+	LOGGER(`${gettimestr()} @metapl`)
 })

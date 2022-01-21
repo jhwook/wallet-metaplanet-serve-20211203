@@ -1,7 +1,10 @@
 
 const db=require('../models')
 const {LOGGER}=require('./common')
+const moment=require('moment')
 
+let TIME_STR_FOMRAT='YYYY-MM-DDTHH:mm:ss'
+const gettimestr=str=> str? moment(str).format( TIME_STR_FORMAT ) : moment().format( TIME_STR_FORMAT )  
 const tableexists=async tablename=>{
   let resp=await db.sequelize.query(`SHOW TABLES LIKE '${tablename}'`)
   return resp[0][0]
@@ -66,7 +69,8 @@ const countrows_scalar = (table,jfilter)=>{
 }
 
 module.exports={
-	tableexists
+	gettimestr
+	, tableexists
 	, fieldexists
 	,	findone
 	, togglefield	

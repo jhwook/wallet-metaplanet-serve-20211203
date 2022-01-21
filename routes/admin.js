@@ -16,18 +16,19 @@ const { createrow : createrow_mon
 	, dbmon
 }=require('../utils/dbmon') 
 const moment = require('moment');
-const { ISFINITE , KEYS , create_a_uuid }=require('../utils/common')
+const { ISFINITE , KEYS , create_a_uuid , gettimestr }=require('../utils/common')
 const {respok,respreqinvalid,resperr , resperrwithstatus } =require('../utils/rest')
 const {messages}=require('../configs/messages')
 const {getuseragent , getipaddress}=require('../utils/session')
 const LOGGER=console.log
-let NETTYPE = 'ETH-TESTNET'
+const { NETTYPE } =require('../configs/net' ) // 'ETH-TESTNET'
 let { Op } = db.Sequelize;
 const convliker=str=>'%' + str + '%';
 const { generaterandomstr } = require('../utils/common');
 const TOKENLEN = 48;
+const { MAP_TX_TYPES }=require('../configs/configs')
 
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
 	const { username , pw } = req.body;
 	LOGGER('9zDR9JKsqq',req.body);
 	if( !username || !pw ) { resperr(res,messages.MSG_ARGMISSING); return; }
@@ -47,9 +48,15 @@ router.post('/login', (req, res) => {
 			, useragent:getuseragent( req ).substr(0, 900)
 			, ipaddress
 		  }).then(async resp=>{
+			let userinfo = await findone( 'users' , { username } )
+			
+			if(			userinfo){
+				delete userinfo.pw
+			}
 			respok(res ,null,null, {
 				respdata : token ,
 				payload : {token,
+					userinfo
 				}		 
 			})
 		});
@@ -58,7 +65,7 @@ router.post('/login', (req, res) => {
 
 router.post('/balances/increment/:username/:token/:value',(req,res)=>{
 	let {username , token , value}=req.params
-	let { writer }=req.body
+	let { writer , note  }=req.body
 	findone('users', {username}).then(resp=>{
 		if(resp){} else {resperr(res,messages.MSG_DATANOTFOUND);return}
 		let uuid =		create_a_uuid	() 
@@ -69,21 +76,44 @@ router.post('/balances/increment/:username/:token/:value',(req,res)=>{
 			, amount : value
 			, currency : token
 			, from_ : writer
+			, to_ : username
 			, nettype : NETTYPE
 			, typestr: +value>0? 'INCREMENT' : 'DECREMENT'
-			, uuid 		
+			, uuid
+			, note : note? note : null
+			, supertype : +value>0? 1 : 2 
 		} )	
 		aproms[aproms.length] = incrementrow( { table : 'balances' 
 			, jfilter: { username , currency : token } 
 			, fieldname : 'amount' 
 			, incvalue : value
 		})
-		Promise.all(aproms).then(resp=>{ 
-			LOGGER('' , resp ) 
+		Promise.all(aproms).then(resp=>{  //			LOGGER('' , resp ) 
 			respok (res,null,null, {payload: {
 				uuid
 			}})
+		createrow ( 'pushnotifies' , {
+			username
+			, from_ : ''
+			, to_ : ''
+			, amount : value 
+			, currency : token 
+			, type : +value>0? MAP_TX_TYPES[ 'INCREMENT' ] : MAP_TX_TYPES[ 'DECREMENT' ]
+			, typestr : +value>0? 'INCREMENT' : 'DECREMENT'
+			, txhash : null // ''
+			, nettype :NETTYPE 
+			, title : +value>0 ? `${value} ${token} 입금되었습니다`  : `${value} ${token} 차감되었습니다`
+			, contentbody : `${value} ${token}`
 		})
+
+		incrementrow({
+			table : 'users'
+			,	jfilter : {username}
+			,	fieldname : +value>0 ? 'countincrements' : 'countdecrements'
+			, incvalue : +1 
+		})
+		})
+		
 	})
 })
 /**transactionsinside;
@@ -298,8 +328,8 @@ router.get("/searchUser/:tablename/:username/:option", (req, res) => {
 		where:{
 			username: username
 		}, order: [[option, 'DESC']]
-	}).then( resp =>{
-		respok(res,null,null,{resp} )
+	}).then( list =>{
+		respok(res,null,null,{ list } )
 	});
 })
 router.get('/onlyUser/:offset/:limit',(req,res)=>{
@@ -312,14 +342,111 @@ router.get('/onlyUser/:offset/:limit',(req,res)=>{
 		where:{
 			level: { [Op.lte] : 3 }
 		}
-		, offset
-		, limit
-		, order: [['id','DESC']]
+			, offset
+			, limit
+			, order: [['id','DESC']]
 	  }).then(list=>{
 		respok(res,null,null,{list} )
 	  })
 	})
 })
+const { TOKENNAME } =require('../configs/net')
+let TOKENS=[ 'ETH' , TOKENNAME ] // 'META PLANET' ]
+const reduce_inner_tx_to_balances=async username=>{
+	let list =	await findall('transactionsinside' , {username})
+	let jdata={}
+	TOKENS.forEach ( tokenelem=>{
+		let listfiltered = list.filter( listelem => {return listelem.currency == tokenelem })
+		false && LOGGER( '3oBdRgWscj' , listfiltered )
+		if ( listfiltered){
+			switch (listfiltered.length){
+				case 0 : 
+					jdata[ tokenelem ] =  0
+				break
+				case 1 : 
+					jdata [tokenelem ] = listfiltered[0].amount
+				break
+				default :
+//						jdata[ tokenelem ] =  listfiltered.reduce ((a,b)=>+a.amount + +b.amount) ; LOGGER('ks4OYb10vO' , jdata[ tokenelem ])
+					jdata[ tokenelem ] = 0 
+					for ( let i=listfiltered.length-1; i>=0; i--){
+						jdata[ tokenelem ] += + listfiltered[i].amount
+					}
+				break 
+			}
+		} else { 
+			jdata[ tokenelem ] = 0
+		}
+	})
+// 	jdata[ tokenelem ] = listfiltered && >1? listfiltered.reduce ((a,b)=>+a.amount + +b.amount) : 0
+LOGGER('Nci3humt2Y' , username , jdata)
+	return jdata
+}
+router.get('/onlyUser/list/:offset/:limit', async(req,res)=>{
+	let {date0, date1, option} = req.query;
+	console.log( req.params, '', req.query,'', date0 + "/" + date1);
+	let {offset,limit} = req.params
+	offset=+offset ; limit =+limit;
+	if(Number.isFinite(offset) && Number.isFinite(limit)){} else {resperr(res,messages.MSG_ARGINVALID , 53192 );return}
+	if ( offset>=0 && limit > 0 ){} else {resperr(res , messages.MSG_ARGINVALID , 53193 ) ;return }
+	let jfilter={
+		level: { [Op.lte] : 3 },
+//		createdat: {
+	//		[Op.gte] : moment(date0).add(1, "days").format('YYYY-MM-DD HH:mm:ss')
+		//, [Op.lte] : moment(date1).add(1, 'days').format('YYYY-MM-DD HH:mm:ss')
+	//	}
+	}
+	if (option && option.length ){
+		if ( typeof option == 'string' ){
+		}
+		else if ( typeof option == 'object' ){
+			option = option[ 0 ] 
+		}
+			let respfieldexists =await fieldexists('users', option )
+			if (respfieldexists){}
+			else {option='id' }
+	}
+	else { option='id'}
+	let jdata00={}
+	let jdata01={}
+	if (date0 ){	date0=gettimestr( date0 ); 	jdata00[ 'createdat' ] = { [Op.gte] : date0 } } 
+	if (date1 ){	date1=gettimestr( date1 ); 	jdata01[ 'createdat' ] = { [Op.lte] : date1 } }
+	db[ "users" ].findAll({raw:true
+	, where :{
+			level: { [Op.lte] : 3 }
+			, ... jdata00 
+			, ... jdata01
+//		createdat: {
+	//		[Op.gte] : moment(date0).add(1, "days").format('YYYY-MM-DD HH:mm:ss')
+		//, [Op.lte] : moment(date1).add(1, 'days').format('YYYY-MM-DD HH:mm:ss')
+//			}
+		}
+		, offset
+		, limit
+		, order:[ [option,'DESC'] ]
+		}
+	).then(async respusers =>{ //		console.log(resp);
+		let aproms=[]; 
+		let aproms_accounts=[]
+		respusers.forEach ( elemuser =>{
+			aproms[ aproms.length ] =reduce_inner_tx_to_balances ( elemuser.username )
+			aproms_accounts [ aproms_accounts.length ]  = findone('accounts', { username : elemuser.username} )
+		})
+		Promise.all ( aproms).then(async respbalances =>{
+			let respaccounts = await Promise.all ( aproms_accounts )
+			respaccounts = 	respaccounts.map ( elem=>{ delete elem.privatekey ; return elem } ) 
+			LOGGER( 'ia0jPUpeqU' , respbalances )
+			let list = respusers.map ( (elemuser, idx) => { return { 
+				... elemuser 
+				, ... respbalances[ idx ]
+				, balance : respbalances[ idx ]
+				, account : respaccounts[ idx]  } } ) 
+			let count=			await countrows_scalar("users" , jfilter) 
+			respok(res,null,null,{list  , payload : {count} })
+		})
+	})
+})
+
 router.get('/onlyUser/daterange/:offset/:limit', async(req,res)=>{
 	let {date0, date1, option} = req.query;
 	console.log(date0 + "/" + date1);
@@ -329,25 +456,32 @@ router.get('/onlyUser/daterange/:offset/:limit', async(req,res)=>{
 	let jfilter={
 		level: { [Op.lte] : 3 },
 		createdat: {
-			[Op.gte] : moment(date0).add(1, "days").format('YYYY-MM-DD HH:mm:ss')
-		, [Op.lte] : moment(date1).add(1,'days').format('YYYY-MM-DD HH:mm:ss')
-			}
+			[Op.gte] : moment(date0).add(1, "days" ).format('YYYY-MM-DD HH:mm:ss')
+		, [Op.lte] : moment(date1).add(1, 'days' ).format('YYYY-MM-DD HH:mm:ss')
+		}
 	}
 	db[ "users" ].findAll({raw:true
 	, where :{
 		level: { [Op.lte] : 3 },
 		createdat: {
-			[Op.gte] : moment(date0).add(1, "days").format('YYYY-MM-DD HH:mm:ss')
-		, [Op.lte] : moment(date1).add(1,'days').format('YYYY-MM-DD HH:mm:ss')
+			[Op.gte] : moment(date0).add(1, "days" ).format('YYYY-MM-DD HH:mm:ss')
+		, [Op.lte] : moment(date1).add(1, 'days' ).format('YYYY-MM-DD HH:mm:ss')
 			}
 		}
 		, offset,limit
 		, order:[ [option,'DESC'] ]
 		}
-	).then(async resp=>{
-		console.log(resp);
-		let count=			await countrows_scalar("users" , jfilter) 
-		respok(res,null,null,{list : resp , payload : {count} })
+	).then(async respusers =>{ //		console.log(resp);
+		let aproms=[]
+		respusers.forEach ( elem=>{
+			aproms[aproms.length ] =reduce_inner_tx_to_balances ( elem.username )
+		})
+		Promise.all ( aproms).then(async resp=>{
+			let list = respusers.map ( (elemuser, idx) => { return { ... elemuser , ... resp[idx ] } } ) 
+			let count=			await countrows_scalar("users" , jfilter) 
+			respok(res,null,null,{list  , payload : {count} })
+		})
+
 	})
 })
 
@@ -464,7 +598,7 @@ router.get('/transactions/daterange/:where/:offset/:limit', async(req,res)=>{
 		, order:[ [option,'DESC'] ]
 		}
 	).then(async resp=>{
-		console.log(resp);
+		false && console.log('' , resp);
 		let count=			await countrows_scalar("transactions"+where , jfilter) 
 		respok(res,null,null,{list : resp , payload : {count} })
 	})

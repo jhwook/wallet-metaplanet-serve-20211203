@@ -1,5 +1,5 @@
 
-const { wen3 , web3wss }=require( '../configs/configweb3');
+const { web3 , web3wss }=require( '../configs/configweb3');
 const db = require('../models')
 const { tableexists
 	, fieldexists
@@ -15,12 +15,19 @@ const moment = require('moment');
 const LOGGER=console.log // const TOKEN_NAME_DEF = 'METAPLANET'
 let { v5 : uuidv5 } = require('uuid')
 let  TOKEN_CONTRACT_ADDRESS = '0x70E509A0d868F023A8A16787bd659a3bb1357eE1'
-const MAP_TX_TYPES = { 
+const { MAP_TX_TYPES } =require('./configs/configs') 
+/** const MAP_TX_TYPES = { 
 		'RECEIVE-ETH' : 0
 	, 'SEND-ETH' : 1
 	, 'RECEIVE-TOKEN' : 2
 	, 'SEND-TOKEN' : 3
-}
+	, 'INCREMENT-TOKEN' : 4
+	, 'DECREMENT-TOKEN' : 5
+	, 'INCREMENT-ETH' : 6
+	, 'DECREMENT-ETH' : 7
+	, 'INCREMENT' : 8
+	, 'DECREMENT' : 9
+} */
 findone('settings' , {key_ : 'tokencontract'} ).then(resp=>{
 	if(resp && resp.value_ && resp.value_.length == 42 ){}
 	else {return }
@@ -28,7 +35,6 @@ findone('settings' , {key_ : 'tokencontract'} ).then(resp=>{
 })
 const conv_log_field_to_address = str=>{	return web3.utils.toChecksumAddress( str.substr(str.length-40 ) 	)
 }
-
 let TX_EVENT_SIG="0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
 LOGGER(`subscribing to ${TX_EVENT_SIG} ,\n ${TOKEN_CONTRACT_ADDRESS} `)
 var subscription = web3wss.eth.subscribe('logs',
@@ -60,26 +66,79 @@ var subscription = web3wss.eth.subscribe('logs',
 	aproms[aproms.length ] = findone('settings' , { key_ : 'ACTIVE_NETWORK'} )
 	aproms[aproms.length ] = findone('settings' , { key_ : 'TOKEN_NAME_DEF' })
 	aproms[aproms.length ] = findone('settings' , { key_ : 'NAMESPACE_DEF'} )
+	aproms[aproms.length ] = findone('settings' , { key_ : 'TOKEN_DECIMALS'} )
+
 	Promise.all ( aproms).then(aresps=>{
-		let [ nettype , currency , namespace ] = aresps
+		let [ respnettype , respcurrency , namespace , decimals ] = aresps
 		let from_ = conv_log_field_to_address ( txdata.topics[ 1 ] )
 		let to_   = conv_log_field_to_address ( txdata.topics[ 2 ] )
-		let uuid = uuidv5 ( txhash , namespace )
+//		let uuid = uuidv5 ( txhash , namespace )
+		let uuid = uuidv5 ( txhash , Array.from(Array( 16 ).keys()) )
+		let amount = web3.utils.fromWei ( txdata.data , 'picoether' )
+		let currency = respcurrency?.value_
+		let nettype  = respnettype?.value_
 		createrow ('transactionsoutside' , {
 			username : ''
 	 , from_
 	 , to_
 	 , txhash
-	 , amount    : web3.utils.fromWei( txdata.data )
+	 , amount // 'gwei' ) //  / 10** (+decimals.value_)  // web3.utils.fromWei(  , 'micro' )
 	 , currency
 	 , nettype
 	 , writer    : ''
 	 , type      : MAP_TX_TYPES [ 'RECEIVE-TOKEN' ]
 	 , typestr   : 'RECEIVE-TOKEN'
 	 , uuid
-	 })	
+	 })
+		findone('accounts' , {address : from_} ).then(resp=>{
+			if(resp){}
+			else {return}
+			let { username } = resp
+			createrow('pushnotifies', {
+				username 
+				, from_
+				, to_
+				, amount
+				, currency
+	 			, type      : MAP_TX_TYPES [ 'SEND-TOKEN' ]
+				, typestr   : 'SEND-TOKEN'
+				, txhash
+				, nettype
+				, title : '출금알림'
+				, contentbody : `${amount} METAPLANET 이 출금되었습니다 `	
+			})
+		})
+		findone('accounts', { address : to_ } ).then(resp=>{
+			if(resp){}
+			else {return}
+			let { username } = resp
+			createrow('pushnotifies', {
+				username 
+				, from_
+				, to_
+				, amount
+				, currency
+	 			, type      : MAP_TX_TYPES [ 'RECEIVE-TOKEN' ]
+				, typestr   : 'RECEIVE-TOKEN'
+				, txhash
+				, nettype		
+				, title : '입금알림'
+				, contentbody : `${amount} METAPLANET 이 입금되었습니다 `	
+			})
+		})
 	})
 })
+
+/**pushnotifies;
+| username  | varchar(80)      | YES  |     | NULL                |                               |
+| amount    | varchar(20)      | YES  |     | NULL                |                               |
+| currency  | varchar(20)      | YES  |     | NULL                |                               |
+| type      | tinyint(4)       | YES  |     | NULL                |                               |
+| typestr   | varchar(40)      | YES  |     | NULL                |                               |
+| txhash    | varchar(80)      | YES  |     | NULL                |                               |
+| from_     | varchar(80)      | YES  |     | NULL                |                               |
+| to_       | varchar(80)      | YES  |     | NULL                |                               |
+| nettype   | varchar(20)      | YES  |  */
 // const txdata01 = // {
 //   removed: false,
 //   logIndex: 8,
